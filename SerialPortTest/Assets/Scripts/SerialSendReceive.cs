@@ -179,7 +179,7 @@ public class SerialSendReceive : MonoBehaviour {
         return checkSum[0];
     }
 
-    public void StartSerialCommunication()
+    public void StartSerialCommunication(SerialPort port)
     {
         if (!bConnetedDevice)
             return;
@@ -249,7 +249,11 @@ public class SerialSendReceive : MonoBehaviour {
     {
         if (mySerialPort.IsOpen)
         {
-            StartSerialCommunication();
+            mySerialPort.DataReceived += (sender, e) =>
+            {
+                SerialPort port = (SerialPort)sender;
+                StartSerialCommunication(port);
+            };
         }
 
         TestFunc();

@@ -80,9 +80,6 @@ public class SlipTurn : MonoBehaviour
                 mySerialPort.Parity = Parity.None;
                 mySerialPort.DataBits = 8;
                 mySerialPort.StopBits = StopBits.One;
-                mySerialPort.Handshake = Handshake.None;
-                mySerialPort.ReadTimeout = 100;
-
                 mySerialPort.Open();
                
             }

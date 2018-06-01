@@ -1,19 +1,17 @@
-﻿
-/*
+﻿/*
  Luke
  */
- // PITCH = X축
- // YAW = Y축
- // ROLL = Z축
+// PITCH = X축
+// YAW = Y축
+// ROLL = Z축
 using UnityEngine;
 using System.IO.Ports;
 using System;
 using UnityEngine.UI;
-using System.Collections;
 using System.Linq;
 
-public class SlipTurn : MonoBehaviour
-{
+public class SerialSendReceive : MonoBehaviour {
+
     private int errorCount = 0;
     private float rcvFPSTimer = 0.0f;
     private bool isButtonsOn = false;
@@ -81,7 +79,7 @@ public class SlipTurn : MonoBehaviour
                 mySerialPort.DataBits = 8;
                 mySerialPort.StopBits = StopBits.One;
                 mySerialPort.Open();
-               
+
             }
         }
         catch (Exception ex)
@@ -105,15 +103,15 @@ public class SlipTurn : MonoBehaviour
             bConnetedDevice = false;
     }
 
-    void InitializeSendData()
+    public void InitializeSendData()
     {
         if (bConnetedDevice)
         {
-            lukeSendDataPcToDevice(0xFF, 0xFF, 0x00, 0x00, 0x00);
+            SendDataPcToDevice(0xFF, 0xFF, 0x00, 0x00, 0x00);
         }
     }
 
-    public void lukeSendDataPcToDevice(byte brake, byte vibrate, byte fan, byte acDirection, byte acSpeed)
+    void SendDataPcToDevice(byte brake, byte vibrate, byte fan, byte acDirection, byte acSpeed)
     {
         serialSendBuffer[0] = 0x02;
         serialSendBuffer[1] = brake;
@@ -130,11 +128,11 @@ public class SlipTurn : MonoBehaviour
         mySerialPort.DiscardOutBuffer();
     }
 
-    byte CalcCheckSum()
+    public byte CalcCheckSum()
     {
         int sum = (serialSendBuffer[1] +
                             serialSendBuffer[2] +
-                            serialSendBuffer[3] + 
+                            serialSendBuffer[3] +
                             serialSendBuffer[4] +
                             serialSendBuffer[5]);
 
@@ -143,7 +141,7 @@ public class SlipTurn : MonoBehaviour
         return checkSum[0];
     }
 
-    void StartSerialCommunication()
+    public void StartSerialCommunication()
     {
         if (!bConnetedDevice)
             return;
@@ -226,7 +224,7 @@ public class SlipTurn : MonoBehaviour
         Texts[8].text = "Limite_Center : " + DeviceData.Limit_Center;
         Texts[9].text = "Limite_Right : " + DeviceData.Limit_Right;
         Texts[10].text = "Limite_Left : " + DeviceData.Limit_Left;
-        Texts[11].text = "Buttons : " + DeviceData.BTN_L1 + " " 
+        Texts[11].text = "Buttons : " + DeviceData.BTN_L1 + " "
             + DeviceData.BTN_L2 + " " + DeviceData.BTN_R1 + " "
             + DeviceData.BTN_R2;
     }
@@ -294,7 +292,7 @@ public class SlipTurn : MonoBehaviour
     }
 
     void GetSpeedCount()
-    { 
+    {
         DeviceData.SpeedCount = (int)(serialDataBuffer[1] << 24 & 0xFF000000) |
                                                                                     (serialDataBuffer[2] << 16 & 0x00FF0000) |
                                                                                     (serialDataBuffer[3] << 8 & 0x0000FF00) |
@@ -384,6 +382,5 @@ public class SlipTurn : MonoBehaviour
         if (DeviceData.Yaw > MIN_REACT_RANGE && DeviceData.Yaw < MAX_REACT_RANGE)
             DeviceData.Yaw = 0.0f;
     }
-
 
 }

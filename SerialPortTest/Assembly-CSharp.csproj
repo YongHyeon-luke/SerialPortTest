@@ -53,6 +53,7 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\DeviceData.cs" />
      <Compile Include="Assets\Scripts\MoveCube.cs" />
+     <Compile Include="Assets\Scripts\NoneMoterSerial.cs" />
      <Compile Include="Assets\Scripts\SerialSendReceive.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity2017.4.2f2/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>

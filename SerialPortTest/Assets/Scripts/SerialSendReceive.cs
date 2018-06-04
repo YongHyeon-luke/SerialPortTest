@@ -9,11 +9,11 @@ using System.IO.Ports;
 using System;
 using UnityEngine.UI;
 using System.Linq;
-using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using System.Collections;
+using UnityEngine.SceneManagement;
 
-public class SerialSendReceive : MonoBehaviour {
+public class SerialSendReceive : MonoBehaviour
+{
 
     private int errorCount = 0;
     private float rcvFPSTimer = 0.0f;
@@ -28,7 +28,7 @@ public class SerialSendReceive : MonoBehaviour {
     private bool bConnetedDevice = false;
 
     private readonly int serialBaudRate = 115200;
-    public string SerialPortName = "COM3";
+    private  string currentSerialPortName = "COM3";
 
     //Device to PC
     public float RCVSerialRate = 1.0f;
@@ -52,16 +52,32 @@ public class SerialSendReceive : MonoBehaviour {
     {
         serialPorts = SerialPort.GetPortNames();
         dropdown.ClearOptions();
-        DropdownData.Add(new Dropdown.OptionData("빈포트"));
-        //foreach (var item in serialPorts)
-        //    DropdownData.Add(new Dropdown.OptionData(item));
-        dropdown.AddOptions(DropdownData);
+        if (serialPorts.Length == 0)
+        {
+            DropdownData.Add(new Dropdown.OptionData("빈포트"));
+            dropdown.AddOptions(DropdownData);
+        }
+        else
+        {
+            foreach (var item in serialPorts)
+                DropdownData.Add(new Dropdown.OptionData(item));
+            dropdown.AddOptions(DropdownData);
+            currentSerialPortName = serialPorts[0];
+        }
+    }
+
+    void DropdownValueChanged(Dropdown change)
+    {
+        currentSerialPortName = change.GetComponentInChildren<Text>().text;
+        InitializeSerialPort();
+        //Debug.Log(change.GetComponentInChildren<Text>().text);
     }
 
     void OnEnable()
     {
-        InitializeSerialPort();
         GetSerialPort();
+        InitializeSerialPort();
+        dropdown.onValueChanged.AddListener(delegate { DropdownValueChanged(dropdown); });
         RCVSerialBuffer = new byte[RCVBUFFERSIZE];
         serialDataBuffer = Enumerable.Repeat((byte)0x00, 20).ToArray();
         InitializeMotorDevice();
@@ -90,7 +106,7 @@ public class SerialSendReceive : MonoBehaviour {
         {
             if (mySerialPort == null)
             {
-                mySerialPort = new SerialPort(SerialPortName, serialBaudRate);
+                mySerialPort = new SerialPort(currentSerialPortName, serialBaudRate);
                 mySerialPort.Parity = Parity.None;
                 mySerialPort.DataBits = 8;
                 mySerialPort.StopBits = StopBits.One;
@@ -452,5 +468,4 @@ public class SerialSendReceive : MonoBehaviour {
         if (DeviceData.Yaw > MIN_REACT_RANGE && DeviceData.Yaw < MAX_REACT_RANGE)
             DeviceData.Yaw = 0.0f;
     }
-
 }

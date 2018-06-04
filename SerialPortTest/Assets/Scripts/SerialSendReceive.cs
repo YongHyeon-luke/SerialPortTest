@@ -42,13 +42,26 @@ public class SerialSendReceive : MonoBehaviour {
 
     //TestUI
     public Text[] Texts;
-    public String[] serialPorts;
+
+    //드롭다운
+    private String[] serialPorts;
     public Dropdown dropdown;
     private List<Dropdown.OptionData> DropdownData = new List<Dropdown.OptionData>();
+
+    void GetSerialPort()
+    {
+        serialPorts = SerialPort.GetPortNames();
+        dropdown.ClearOptions();
+        DropdownData.Add(new Dropdown.OptionData("빈포트"));
+        //foreach (var item in serialPorts)
+        //    DropdownData.Add(new Dropdown.OptionData(item));
+        dropdown.AddOptions(DropdownData);
+    }
 
     void OnEnable()
     {
         InitializeSerialPort();
+        GetSerialPort();
         RCVSerialBuffer = new byte[RCVBUFFERSIZE];
         serialDataBuffer = Enumerable.Repeat((byte)0x00, 20).ToArray();
         InitializeMotorDevice();

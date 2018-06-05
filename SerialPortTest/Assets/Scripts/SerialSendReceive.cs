@@ -10,25 +10,36 @@ using System;
 using UnityEngine.UI;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
+
+enum MotorDir : byte
+{
+    STOP = 0,
+    RIGHT,
+    LEFT,
+}
 
 public class SerialSendReceive : MonoBehaviour
 {
 
-    private int errorCount = 0;
+    public int errorCount { get; private set; }
+    public String errorMsg { get; private set; }
+
     private float rcvFPSTimer = 0.0f;
     private bool isButtonsOn = false;
     private const float SCALE_FACTOR = 180.0f / 32767.0f;
-    private readonly float MIN_REACT_RANGE = -3.0f;
-    private readonly float MAX_REACT_RANGE = 3.0f;
+    public static readonly float MIN_REACT_RANGE = -3.0f;
+    public static readonly float MAX_REACT_RANGE = 3.0f;
+    public static readonly float MIN_LIMITE_ANGLE = -60.0f;
+    public static readonly float MAX_LIMITE_ANGLE = 60.0f;
+
 
     //PC to Device
     private SerialPort mySerialPort;
     private byte[] serialSendBuffer = Enumerable.Repeat((byte)0x00, 8).ToArray();
-    private bool bConnetedDevice = false;
+    public bool bConnetedDevice { get; private set; }
 
     private readonly int serialBaudRate = 115200;
-    private  string currentSerialPortName = "COM3";
+    public  string currentSerialPortName { get; set; }
 
     //Device to PC
     public float RCVSerialRate = 1.0f;
@@ -39,9 +50,6 @@ public class SerialSendReceive : MonoBehaviour
     private byte chkSum = 0;
     private float RCVTimer = 0.0f;
     private readonly int RCVBUFFERSIZE = 2048;
-
-    //TestUI
-    public Text[] Texts;
 
     //드롭다운
     private String[] serialPorts;
@@ -69,8 +77,9 @@ public class SerialSendReceive : MonoBehaviour
     void DropdownValueChanged(Dropdown change)
     {
         currentSerialPortName = change.GetComponentInChildren<Text>().text;
+        bConnetedDevice = false;
         InitializeSerialPort();
-        //Debug.Log(change.GetComponentInChildren<Text>().text);
+        InitializeMotorDevice();
     }
 
     void OnEnable()
@@ -95,6 +104,11 @@ public class SerialSendReceive : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        Debug.Log(currentSerialPortName);
+    }
+
     void SetSerialPort()
     {
 
@@ -116,7 +130,7 @@ public class SerialSendReceive : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Texts[11].text = "Error : " + ex.Message;
+            errorMsg = ex.Message;
             mySerialPort.Close();
             mySerialPort = null;
             bConnetedDevice = false;
@@ -147,12 +161,19 @@ public class SerialSendReceive : MonoBehaviour
     {
         SetSerialPort();
         CheckSerialPort();
-        Texts[10].text = "Connect : " + bConnetedDevice.ToString();
     }
 
-    //모터가 있는 장치
-    void SendDataPcToDevice(byte brake, byte vibrate, byte fan, byte acDirection, byte acSpeed)
+    /// <summary>
+    /// 장치에 데이터를 전송해 조종합니다.
+    /// </summary>
+    /// <param name="brake">Range : 0x00 ~ 0xFE</param>
+    /// <param name="vibrate">Range : 0x00 ~ 0xFE</param>
+    /// <param name="fan">Range : 0x00 ~0xFE</param>
+    /// <param name="acDirection">0x00 : 정지, 0x01 : 시계방향, 0x02 역시계방향</param>
+    /// <param name="acSpeed">Range : 0x00 ~ 0x3C</param>
+    public void SendDataPcToDevice(byte brake, byte vibrate, byte fan, byte acDirection, byte acSpeed)
     {
+        CheckSendData(ref brake, ref vibrate, ref fan, ref acDirection, ref acSpeed);
         serialSendBuffer[0] = 0x02;
         serialSendBuffer[1] = brake;
         serialSendBuffer[2] = vibrate;
@@ -168,21 +189,52 @@ public class SerialSendReceive : MonoBehaviour
         mySerialPort.DiscardOutBuffer();
     }
 
-    //모터가 없는 장치
-    void SendDataPcToDevice(byte brake, byte vibrate, byte fan)
+    void CheckSendData(ref byte brake, ref byte vibrate, ref byte fan, ref byte acDirection, ref byte acSpeed)
     {
-        serialSendBuffer[0] = 0x02;
-        serialSendBuffer[1] = brake;
-        serialSendBuffer[2] = vibrate;
-        serialSendBuffer[3] = fan;
+        brake = Math.Min(brake, (byte)0xFE);
+        vibrate = Math.Min(vibrate, (byte)0xFE);
+        fan = Math.Min(fan, (byte)0xFE);
+        LimitACMotor(ref acDirection, ref acSpeed);
+     }
 
-        serialSendBuffer[5] = CalcNoneMoterDeviceCheckSum();
+    void LimitACMotor(ref byte acDirection, ref byte acSpeed)
+    {
+        bool OnAcDirectionRange = acDirection == (byte)MotorDir.STOP || acDirection == (byte)MotorDir.RIGHT || acDirection == (byte)MotorDir.LEFT;
 
-        serialSendBuffer[6] = 0x03;
+        if (!OnAcDirectionRange)
+            acDirection = (byte)MotorDir.STOP;
 
-        mySerialPort.Write(serialSendBuffer, 0, serialSendBuffer.Length);
-        mySerialPort.DiscardOutBuffer();
+        if (OnLimiteAngle() || OnLimiteSensor())
+            acSpeed = 0x00;
+        else
+            acSpeed = Math.Min(acSpeed, (byte)0x3C);
     }
+
+    public bool OnLimiteAngle()
+    {
+        return DeviceData.Yaw < MIN_LIMITE_ANGLE || DeviceData.Yaw > MAX_LIMITE_ANGLE;
+    }
+
+    public bool OnLimiteSensor()
+    {
+        return DeviceData.Limit_Left || DeviceData.Limit_Right;
+    }
+
+    ////모터가 없는 장치
+    //public  void SendDataPcToDevice(byte brake, byte vibrate, byte fan)
+    //{
+    //    serialSendBuffer[0] = 0x02;
+    //    serialSendBuffer[1] = brake;
+    //    serialSendBuffer[2] = vibrate;
+    //    serialSendBuffer[3] = fan;
+
+    //    serialSendBuffer[5] = CalcNoneMoterDeviceCheckSum();
+
+    //    serialSendBuffer[6] = 0x03;
+
+    //    mySerialPort.Write(serialSendBuffer, 0, serialSendBuffer.Length);
+    //    mySerialPort.DiscardOutBuffer();
+    //}
 
     byte CalcMoterDeviceCheckSum()
     {
@@ -208,7 +260,7 @@ public class SerialSendReceive : MonoBehaviour
         return checkSum[0];
     }
 
-    public void StartSerialCommunication(ref SerialPort port)
+    void StartSerialCommunication(ref SerialPort port)
     {
         if (!bConnetedDevice)
             return;
@@ -276,7 +328,7 @@ public class SerialSendReceive : MonoBehaviour
 
     void Update()
     {
-        if (mySerialPort != null)
+        if (mySerialPort != null && mySerialPort.IsOpen)
         {
             mySerialPort.DataReceived += (sender, e) =>
             {
@@ -284,23 +336,6 @@ public class SerialSendReceive : MonoBehaviour
                 StartSerialCommunication(ref port);
             };
         }
-        TestFunc();
-    }
-
-    protected void TestFunc()
-    {
-        Texts[0].text = "Roll :" + DeviceData.Roll;
-        Texts[1].text = "Pitch : " + DeviceData.Pitch;
-        Texts[2].text = "Yaw : " + DeviceData.Yaw;
-        Texts[3].text = "Speed : " + DeviceData.SpeedCount;
-        Texts[4].text = "Rotary : " + DeviceData.RotaryCount;
-        Texts[5].text = "Handle : " + DeviceData.Handle;
-        Texts[6].text = "Limite_Center : " + DeviceData.Limit_Center;
-        Texts[7].text = "Limite_Right : " + DeviceData.Limit_Right;
-        Texts[8].text = "Limite_Left : " + DeviceData.Limit_Left;
-        Texts[9].text = "Buttons : " + DeviceData.BTN_L1 + " "
-            + DeviceData.BTN_L2 + " " + DeviceData.BTN_R1 + " "
-            + DeviceData.BTN_R2;
     }
 
     void InitializeRCVSerialBuffer()
@@ -319,12 +354,12 @@ public class SerialSendReceive : MonoBehaviour
         }
         catch (InvalidOperationException e)
         {
-            Texts[11].text = "Error : " + e.Message;
+            errorMsg = e.Message;
             return -1;
         }
         catch (ArgumentNullException e)
         {
-            Texts[11].text = "Error : " + e.Message;
+            errorMsg =  e.Message;
             return -1;
         }
         finally
@@ -332,6 +367,14 @@ public class SerialSendReceive : MonoBehaviour
             mySerialPort.Close();
             mySerialPort = null;
             bConnetedDevice = false;
+        }
+    }
+
+    void InitializeSerialDataBuffer()
+    {
+        for (int j = 0; j < serialDataBuffer.Length; j++)
+        {
+            serialDataBuffer[j] = 0x00;
         }
     }
 
@@ -347,14 +390,6 @@ public class SerialSendReceive : MonoBehaviour
         else
         {
             errorCount++;
-        }
-    }
-
-    void InitializeSerialDataBuffer()
-    {
-        for (int j = 0; j < serialDataBuffer.Length; j++)
-        {
-            serialDataBuffer[j] = 0x00;
         }
     }
 
@@ -396,7 +431,7 @@ public class SerialSendReceive : MonoBehaviour
     void GetHandle()
     {
         DeviceData.Handle = (int)(serialDataBuffer[9] << 8 & 0xFF00) |
-                                                                           (serialDataBuffer[10] & 0x03FF);
+                                                                           (serialDataBuffer[10] & 0x00FF);
     }
 
     void SetButton()

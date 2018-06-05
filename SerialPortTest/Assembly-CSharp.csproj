@@ -51,10 +51,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\ConfigFile.cs" />
+     <Compile Include="Assets\Scripts\ControlDevice.cs" />
      <Compile Include="Assets\Scripts\DeviceData.cs" />
-     <Compile Include="Assets\Scripts\MoveCube.cs" />
+     <Compile Include="Assets\Scripts\MovePlayer.cs" />
      <Compile Include="Assets\Scripts\NoneMoterSerial.cs" />
      <Compile Include="Assets\Scripts\SerialSendReceive.cs" />
+     <Compile Include="Assets\Scripts\TestUI.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity2017.4.2f2/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>

@@ -441,7 +441,6 @@ GameObject:
   - component: {fileID: 180996117}
   - component: {fileID: 180996121}
   - component: {fileID: 180996122}
-  - component: {fileID: 180996123}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -549,18 +548,6 @@ MonoBehaviour:
   - {fileID: 1569261716}
   - {fileID: 2107996540}
   - {fileID: 34048334}
-  serialSendReceive: {fileID: 2037434687}
---- !u!114 &180996123
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 180996116}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2012f35bd0446cf4cb0a28c7fe882076, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
   serialSendReceive: {fileID: 2037434687}
 --- !u!1 &382290532
 GameObject:

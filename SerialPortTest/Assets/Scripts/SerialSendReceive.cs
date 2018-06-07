@@ -7,9 +7,7 @@
 using UnityEngine;
 using System.IO.Ports;
 using System;
-using UnityEngine.UI;
 using System.Linq;
-using System.Collections.Generic;
 
 enum MotorDir : byte
 {
@@ -52,44 +50,44 @@ public class SerialSendReceive : MonoBehaviour
     private readonly int RCVBUFFERSIZE = 2048;
 
     //드롭다운
-    private String[] serialPorts;
-    public Dropdown dropdown;
-    private List<Dropdown.OptionData> DropdownData = new List<Dropdown.OptionData>();
+    //private String[] serialPorts;
+    //public Dropdown dropdown;
+    //private List<Dropdown.OptionData> DropdownData = new List<Dropdown.OptionData>();
 
-    void GetSerialPort()
-    {
-        serialPorts = SerialPort.GetPortNames();
-        dropdown.ClearOptions();
-        if (serialPorts.Length == 0)
-        {
-            DropdownData.Add(new Dropdown.OptionData("빈포트"));
-            dropdown.AddOptions(DropdownData);
-        }
-        else
-        {
-            foreach (var item in serialPorts)
-                DropdownData.Add(new Dropdown.OptionData(item));
-            dropdown.AddOptions(DropdownData);
-            currentSerialPortName = serialPorts[0];
-        }
-    }
+    //void GetSerialPort()
+    //{
+    //    serialPorts = SerialPort.GetPortNames();
+    //    dropdown.ClearOptions();
+    //    if (serialPorts.Length == 0)
+    //    {
+    //        DropdownData.Add(new Dropdown.OptionData("빈포트"));
+    //        dropdown.AddOptions(DropdownData);
+    //    }
+    //    else
+    //    {
+    //        foreach (var item in serialPorts)
+    //            DropdownData.Add(new Dropdown.OptionData(item));
+    //        dropdown.AddOptions(DropdownData);
+    //        currentSerialPortName = serialPorts[0];
+    //    }
+    //}
 
-    void DropdownValueChanged(Dropdown change)
-    {
-        currentSerialPortName = change.GetComponentInChildren<Text>().text;
-        bConnetedDevice = false;
-        InitializeSerialPort();
-        InitializeMotorDevice();
-    }
+    //void DropdownValueChanged(Dropdown change)
+    //{
+    //    currentSerialPortName = change.GetComponentInChildren<Text>().text;
+    //    bConnetedDevice = false;
+    //    InitializeSerialPort();
+    //    InitializeMotorDevice();
+    //}
 
     void OnEnable()
     {
-        GetSerialPort();
         InitializeSerialPort();
-        dropdown.onValueChanged.AddListener(delegate { DropdownValueChanged(dropdown); });
+        //dropdown.onValueChanged.AddListener(delegate { DropdownValueChanged(dropdown); });
         RCVSerialBuffer = new byte[RCVBUFFERSIZE];
         serialDataBuffer = Enumerable.Repeat((byte)0x00, 20).ToArray();
         InitializeMotorDevice();
+
     }
 
     void OnDisable()
@@ -104,9 +102,10 @@ public class SerialSendReceive : MonoBehaviour
         }
     }
 
-    void Start()
+    private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
     {
-        Debug.Log(currentSerialPortName);
+        SerialPort sp = (SerialPort)sender;
+        StartSerialCommunication(ref sp);
     }
 
     void SetSerialPort()
@@ -125,6 +124,7 @@ public class SerialSendReceive : MonoBehaviour
                 mySerialPort.DataBits = 8;
                 mySerialPort.StopBits = StopBits.One;
                 mySerialPort.ReadTimeout = 200;
+                mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
                 mySerialPort.Open();
             }
         }
@@ -260,7 +260,7 @@ public class SerialSendReceive : MonoBehaviour
         return checkSum[0];
     }
 
-    void StartSerialCommunication(ref SerialPort port)
+    void StartSerialCommunication(ref SerialPort sp)
     {
         if (!bConnetedDevice)
             return;
@@ -271,7 +271,7 @@ public class SerialSendReceive : MonoBehaviour
 
             InitializeRCVSerialBuffer();
 
-            int length = ReadSerialPortBuffer();
+            int length = ReadSerialPortBuffer(ref sp);
 
             //serialDataBuffer 20바이트 배열
             //RCVSerialBuffer = 2048바이트 배열
@@ -326,17 +326,10 @@ public class SerialSendReceive : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        if (mySerialPort != null && mySerialPort.IsOpen)
-        {
-            mySerialPort.DataReceived += (sender, e) =>
-            {
-                SerialPort port = (SerialPort)sender;
-                StartSerialCommunication(ref port);
-            };
-        }
-    }
+    //void Update()
+    //{
+        
+    //}
 
     void InitializeRCVSerialBuffer()
     {
@@ -346,11 +339,11 @@ public class SerialSendReceive : MonoBehaviour
         }
     }
 
-    int ReadSerialPortBuffer()
+    int ReadSerialPortBuffer(ref SerialPort sp)
     {
         try
         {
-            return mySerialPort.Read(RCVSerialBuffer, 0, RCVBUFFERSIZE);
+            return sp.Read(RCVSerialBuffer, 0, RCVBUFFERSIZE);
         }
         catch (InvalidOperationException e)
         {
@@ -362,12 +355,12 @@ public class SerialSendReceive : MonoBehaviour
             errorMsg =  e.Message;
             return -1;
         }
-        finally
-        {
-            mySerialPort.Close();
-            mySerialPort = null;
-            bConnetedDevice = false;
-        }
+        //finally
+        //{
+        //    mySerialPort.Close();
+        //    mySerialPort = null;
+        //    bConnetedDevice = false;
+        //}
     }
 
     void InitializeSerialDataBuffer()

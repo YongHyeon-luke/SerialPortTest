@@ -11,21 +11,25 @@ public class ControlDevice : MonoBehaviour {
     public static readonly float MAX_MOTOR_SPEED = 50.0f;
     public SerialSendReceive serialSendReceive;
 
-    void Start()
-    {
-        InvokeRepeating("UpdateMotor", 0.0f, 0.05f);
-    }
-
     void UpdateMotor()
     {
+        //if (DeviceData.Pitch > 0)
+        //    _motorDir = (byte)MotorDir.RIGHT;
+        //else if (DeviceData.Pitch < 0)
+        //    _motorDir = (byte)MotorDir.LEFT;
+        //else
+        //    _motorDir = (byte)MotorDir.STOP;
+
         Horizontal = Input.GetAxis("Horizontal") * MAX_MOTOR_SPEED;
         _motorSpeed = (byte)Math.Abs(Horizontal);
+
         if (serialSendReceive.bConnetedDevice)
             serialSendReceive.SendDataPcToDevice(0x00, 0x00, 0x00, _motorDir, _motorSpeed);
     }
 
     void Update()
     {
+
         if (Horizontal < 0)
             _motorDir = (byte)MotorDir.LEFT;
         else if (Horizontal > 0)
@@ -33,7 +37,9 @@ public class ControlDevice : MonoBehaviour {
         else
             _motorDir = (byte)MotorDir.STOP;
 
+        UpdateMotor();
+
     }
-    
-    
+
+
 }

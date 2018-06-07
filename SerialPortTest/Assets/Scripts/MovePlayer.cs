@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent (typeof(ControlDevice))]
 public class MovePlayer : MonoBehaviour {
 
     private Transform myTransform;
@@ -16,8 +15,7 @@ public class MovePlayer : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        float movePos = controlDevice.Horizontal * Time.deltaTime;
-        myTransform.Rotate(0, movePos, 0);
-
+        //float movePos = DeviceData.Yaw * Time.deltaTime;
+        //myTransform.Rotate(0, movePos, 0);
     }
 }
